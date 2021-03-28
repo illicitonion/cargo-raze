@@ -20,13 +20,12 @@ use std::{
   string::String,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use cargo_lock::Lockfile;
 use cargo_metadata::{Metadata, MetadataCommand};
 use glob::glob;
 use pathdiff::diff_paths;
 use regex::Regex;
-use rustc_serialize::hex::ToHex;
 use tempfile::TempDir;
 use url::Url;
 
@@ -144,7 +143,9 @@ fn make_symlink(src: &Path, dest: &Path) -> Result<()> {
 /// A workspace metadata fetcher that uses the Cargo commands to gather information about a Cargo
 /// project and it's transitive dependencies for planning and rendering of Bazel BUILD files.
 pub struct RazeMetadataFetcher {
+  #[allow(unused)] // Only used if feature binary-deps is enabled
   registry_url: Url,
+  #[allow(unused)] // Only used if feature binary-deps is enabled
   index_url: Url,
   metadata_fetcher: Box<dyn MetadataFetcher>,
   lockfile_generator: Box<dyn LockfileGenerator>,
@@ -283,6 +284,7 @@ impl RazeMetadataFetcher {
     Ok((temp_dir, no_deps_metadata.workspace_root))
   }
 
+  #[cfg(feature = "binary-deps")]
   /// Download a crate's source code from the current registry url
   fn fetch_crate_src(&self, dir: &Path, name: &str, version: &str) -> Result<PathBuf> {
     // The registry url should only be the host URL with ports. No path
@@ -316,6 +318,11 @@ impl RazeMetadataFetcher {
     }
 
     Ok(crate_dir)
+  }
+
+  #[cfg(not(feature = "binary-deps"))]
+  fn fetch_crate_src(&self, _dir: &Path, _name: &str, _version: &str) -> Result<PathBuf> {
+    bail!("cargo-raze was built without binary-deps support, please re-build with feature binary-deps")
   }
 
   /// Add binary dependencies as workspace members to the given workspace root Cargo.toml file
@@ -356,6 +363,7 @@ impl RazeMetadataFetcher {
     })
   }
 
+  #[cfg(feature = "binary-deps")]
   /// Look up a crate in a specified crate index to determine it's checksum
   fn fetch_crate_checksum(&self, name: &str, version: &str) -> Result<String> {
     let index_url_is_file = self.index_url.scheme().to_lowercase() == "file";
@@ -377,7 +385,13 @@ impl RazeMetadataFetcher {
       .find(|(_, ver)| ver.version() == version)
       .ok_or_else(|| anyhow!("Failed to find version {} for crate {}", version, name))?;
 
-    Ok(crate_version.checksum()[..].to_hex())
+    use rustc_serialize::hex::ToHex;
+    Ok(Some(crate_version.checksum()[..].to_hex()))
+  }
+
+  #[cfg(not(feature = "binary-deps"))]
+  fn fetch_crate_checksum(&self, _name: &str, _version: &str) -> Result<String> {
+    bail!("cargo-raze was built without binary-deps support, please re-build with feature binary-deps")
   }
 
   /// Ensures a lockfile is generated for a crate on disk
@@ -421,6 +435,7 @@ impl RazeMetadataFetcher {
 
     // Gather new lockfile data if any binary dependencies were provided
     let mut checksums: HashMap<String, String> = HashMap::new();
+
     if let Some(binary_dep_info) = binary_dep_info {
       if !binary_dep_info.is_empty() {
         let mut src_dirnames: Vec<String> = Vec::new();
@@ -430,7 +445,7 @@ impl RazeMetadataFetcher {
           let src_dir = self.fetch_crate_src(cargo_dir.as_ref(), &name, version)?;
           checksums.insert(
             package_ident(name, version),
-            self.fetch_crate_checksum(name, version)?,
+            self.fetch_crate_checksum(name, version)?
           );
           if let Some(dirname) = src_dir.file_name() {
             if let Some(dirname_str) = dirname.to_str() {
