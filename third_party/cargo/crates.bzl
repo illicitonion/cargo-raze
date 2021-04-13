@@ -19,7 +19,7 @@ _DEPENDENCIES = {
         "cargo_metadata": "@cargo_raze__cargo_metadata__0_12_3//:cargo_metadata",
         "cargo_toml": "@cargo_raze__cargo_toml__0_8_1//:cargo_toml",
         "cfg-expr": "@cargo_raze__cfg_expr__0_6_0//:cfg_expr",
-        "crates-index": "@cargo_raze__crates_index__0_16_4//:crates_index",
+        "crates-index": "@cargo_raze__crates_index__0_16_5//:crates_index",
         "docopt": "@cargo_raze__docopt__1_1_1//:docopt",
         "glob": "@cargo_raze__glob__0_3_0//:glob",
         "itertools": "@cargo_raze__itertools__0_10_0//:itertools",
@@ -701,12 +701,12 @@ def cargo_raze_fetch_remote_crates():
 
     maybe(
         http_archive,
-        name = "cargo_raze__crates_index__0_16_4",
-        url = "https://crates.io/api/v1/crates/crates-index/0.16.4/download",
+        name = "cargo_raze__crates_index__0_16_5",
+        url = "https://crates.io/api/v1/crates/crates-index/0.16.5/download",
         type = "tar.gz",
-        sha256 = "f01dd064c9e221dd92ad85fce4530969b555ee01a284983da55b46e38690028b",
-        strip_prefix = "crates-index-0.16.4",
-        build_file = Label("//third_party/cargo/remote:BUILD.crates-index-0.16.4.bazel"),
+        sha256 = "8b8921b4ef00013adbfeb803c4a23c5f311eaaaa06b38826e4f887aadbfd3f1d",
+        strip_prefix = "crates-index-0.16.5",
+        build_file = Label("//third_party/cargo/remote:BUILD.crates-index-0.16.5.bazel"),
     )
 
     maybe(
