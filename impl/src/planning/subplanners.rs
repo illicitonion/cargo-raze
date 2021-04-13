@@ -19,7 +19,7 @@ use std::{
   str::FromStr,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use cargo_lock::SourceId;
 use cargo_metadata::{DependencyKind, Node, Package};
 use cargo_platform::Platform;
@@ -34,7 +34,7 @@ use crate::{
   error::{RazeError, PLEASE_FILE_A_BUG},
   metadata::RazeMetadata,
   planning::license,
-  settings::{format_registry_url, CrateSettings, GenMode, RazeSettings},
+  settings::{CrateSettings, GenMode, RazeSettings},
   util,
 };
 
@@ -42,6 +42,7 @@ use super::{
   crate_catalog::{CrateCatalog, CrateCatalogEntry},
   PlannedBuild,
 };
+use url::Url;
 
 /// A set of named dependencies (without version) derived from a package manifest.
 struct DependencyNames {
@@ -412,14 +413,13 @@ impl<'planner> CrateSubplanner<'planner> {
       links: package.links.clone(),
       raze_settings,
       canonical_additional_build_file,
-      source_details: self.produce_source_details(&package, &package_root),
+      source_details: self.produce_source_details(
+        &self.settings.registry,
+        &package,
+        &package_root,
+      )?,
       expected_build_path: self.crate_catalog_entry.local_build_path(&self.settings)?,
       sha256: self.sha256.clone(),
-      registry_url: format_registry_url(
-        &self.settings.registry,
-        &package.name,
-        &package.version.to_string(),
-      ),
       lib_target_name,
       targets,
     };
@@ -661,9 +661,17 @@ impl<'planner> CrateSubplanner<'planner> {
   }
 
   /// Generates source details for internal crate.
-  fn produce_source_details(&self, package: &Package, package_root: &Path) -> SourceDetails {
-    SourceDetails {
-      git_data: self.source_id.as_ref().filter(|id| id.is_git()).map(|id| {
+  fn produce_source_details(
+    &self,
+    crates_io_template: &str,
+    package: &Package,
+    package_root: &Path,
+  ) -> Result<SourceDetails> {
+    let mut git_data = None;
+    let mut download_url = None;
+
+    if let Some(source_id) = self.source_id {
+      if source_id.is_git() {
         let manifest_parent = package.manifest_path.parent().unwrap();
         let path_to_crate_root = manifest_parent.strip_prefix(package_root).unwrap();
         let path_to_crate_root = if path_to_crate_root.components().next().is_some() {
@@ -671,13 +679,59 @@ impl<'planner> CrateSubplanner<'planner> {
         } else {
           None
         };
-        GitRepo {
-          remote: id.url().to_string(),
-          commit: id.precise().unwrap().to_owned(),
+        git_data = Some(GitRepo {
+          remote: source_id.url().to_string(),
+          commit: source_id.precise().unwrap().to_owned(),
           path_to_crate_root,
-        }
-      }),
+        });
+      }
+      if source_id.is_remote_registry() {
+        download_url = Some(
+          Self::produce_download_url(crates_io_template, package).with_context(|| {
+            format!(
+              "Producing download URL for crate {} version {}",
+              &package.name, &package.version
+            )
+          })?,
+        );
+      }
     }
+    Ok(SourceDetails {
+      git_data,
+      download_url,
+    })
+  }
+
+  fn produce_download_url(crates_io_template: &str, package: &Package) -> Result<Url> {
+    if let Some(source) = &package.source {
+      if source.is_crates_io() {
+        return Ok(
+          crates_io_template
+            .replace("{crate}", &package.name)
+            .replace("{version}", &package.version.to_string())
+            .parse()?,
+        );
+      }
+      if let Some(index_url) = source.repr.strip_prefix("registry+") {
+        let index = crates_index::BareIndex::from_url(index_url)?;
+        let index = index.open_or_clone()?;
+        let config = index.index_config()?;
+        let url = config.download_url(&package.name, &package.version.to_string());
+        if let Some(url) = url {
+          return Ok(url.parse()?);
+        } else {
+          bail!(
+            "Could not derive URL for crate {} version {}",
+            package.name,
+            package.version
+          );
+        }
+      }
+    }
+    bail!(
+      "Expected source to be present and start with registry+ but was {:?}",
+      package.source
+    );
   }
 
   /// Extracts the (one and only) build script target from the provided set of build targets.

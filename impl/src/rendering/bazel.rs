@@ -569,9 +569,15 @@ mod tests {
       }],
       build_script_target: None,
       links: None,
-      source_details: SourceDetails { git_data: None },
+      source_details: SourceDetails {
+        git_data: None,
+        download_url: Some(
+          "https://crates.io/api/v1/crates/test-binary/1.1.1/download"
+            .parse()
+            .unwrap(),
+        ),
+      },
       sha256: None,
-      registry_url: "https://crates.io/api/v1/crates/test-binary/1.1.1/download".to_string(),
       lib_target_name: None,
     }
   }
@@ -616,9 +622,15 @@ mod tests {
       }],
       build_script_target: None,
       links: Some("ssh2".to_owned()),
-      source_details: SourceDetails { git_data: None },
+      source_details: SourceDetails {
+        git_data: None,
+        download_url: Some(
+          "https://crates.io/api/v1/crates/test-binary/1.1.1/download"
+            .parse()
+            .unwrap(),
+        ),
+      },
       sha256: None,
-      registry_url: "https://crates.io/api/v1/crates/test-binary/1.1.1/download".to_string(),
       lib_target_name: Some("test_library".to_owned()),
     }
   }
