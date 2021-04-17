@@ -16,10 +16,10 @@ use std::path::PathBuf;
 
 use crate::settings::CrateSettings;
 use semver::Version;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// A struct containing information about a crate's dependency that's buildable in Bazel
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BuildableDependency {
   // Note: Buildifier-compliant BUILD file generation depends on correct sorting of collections
   // of this struct by `buildable_target`. Do not add fields preceding this field.
@@ -29,13 +29,13 @@ pub struct BuildableDependency {
   pub is_proc_macro: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DependencyAlias {
   pub target: String,
   pub alias: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BuildableTarget {
   pub kind: String,
   pub name: String,
@@ -45,13 +45,13 @@ pub struct BuildableTarget {
   pub edition: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Metadep {
   pub name: String,
   pub min_version: Version,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct LicenseData {
   pub name: String,
   pub rating: String,
@@ -66,7 +66,7 @@ impl Default for LicenseData {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct GitRepo {
   pub remote: String,
   pub commit: String,
@@ -76,12 +76,12 @@ pub struct GitRepo {
   pub path_to_crate_root: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct SourceDetails {
   pub git_data: Option<GitRepo>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CrateDependencyContext {
   pub dependencies: Vec<BuildableDependency>,
   pub proc_macro_dependencies: Vec<BuildableDependency>,
@@ -106,14 +106,14 @@ impl CrateDependencyContext {
   }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CrateTargetedDepContext {
   pub target: String,
   pub deps: CrateDependencyContext,
   pub conditions: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct CrateContext {
   pub pkg_name: String,
   pub pkg_version: Version,
