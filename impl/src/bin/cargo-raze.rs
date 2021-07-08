@@ -234,7 +234,7 @@ fn render_files(
 
   let mut bazel_renderer = BazelRenderer::new();
   let render_details = RenderDetails {
-    cargo_root: metadata.cargo_workspace_root.clone().into(),
+    cargo_root: metadata.cargo_workspace_root.clone(),
     path_prefix: PathBuf::from(&settings.workspace_path.trim_start_matches('/')),
     package_aliases_dir: settings.package_aliases_dir.clone(),
     vendored_buildfile_name: settings.output_buildfile_suffix.clone(),
@@ -270,9 +270,7 @@ fn write_files(
     if remote_dir.exists() {
       let build_glob = format!("{}/BUILD*.bazel", remote_dir.display());
       for entry in glob::glob(&build_glob)? {
-        if let Ok(path) = entry {
-          fs::remove_file(path)?;
-        }
+        fs::remove_file(entry?)?;
       }
     }
   }
