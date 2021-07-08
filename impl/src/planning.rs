@@ -762,13 +762,13 @@ mod tests {
     assert!(planned_build
       .crate_contexts
       .iter()
-      .find(|ctx| ctx.pkg_name == "unicode-xid" && ctx.pkg_version == Version::from((0, 1, 0)))
+      .find(|ctx| ctx.pkg_name == "unicode-xid" && ctx.pkg_version == Version::new(0, 1, 0))
       .is_some());
 
     assert!(planned_build
       .crate_contexts
       .iter()
-      .find(|ctx| ctx.pkg_name == "unicode-xid" && ctx.pkg_version == Version::from((0, 2, 1)))
+      .find(|ctx| ctx.pkg_name == "unicode-xid" && ctx.pkg_version == Version::new(0, 2, 1))
       .is_some());
   }
   // TODO(acmcarther): Add tests:
