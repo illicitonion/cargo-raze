@@ -82,12 +82,12 @@ rust_library(
         "cargo-raze",
         "manual",
     ],
-    version = "0.13.17",
+    version = "0.13.20",
     # buildifier: leave-alone
     deps = [
         "@cargo_raze__bitflags__1_2_1//:bitflags",
         "@cargo_raze__libc__0_2_92//:libc",
-        "@cargo_raze__libgit2_sys__0_12_18_1_1_0//:libgit2_sys",
+        "@cargo_raze__libgit2_sys__0_12_21_1_1_0//:libgit2_sys",
         "@cargo_raze__log__0_4_14//:log",
         "@cargo_raze__url__2_2_1//:url",
     ] + selects.with_or({
